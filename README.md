@@ -22,7 +22,7 @@ Quizpp is a Flutter-based quiz application that allows users to register, log in
 ## 🎯 Installation
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/quizpp.git
+   git clone https://github.com/MARSHMELLO-4/QuizApp.git
    ```
 2. Navigate to the project directory:
    ```sh
@@ -68,5 +68,5 @@ Contributions are welcome! Feel free to fork the repo, create a new branch, and 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 📞 Contact
-For any inquiries or support, contact [Your Name](mailto:your.email@example.com).
+For any inquiries or support, contact Aman Agrawal aman2004agrawal@gmail.com
 
