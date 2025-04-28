@@ -1,5 +1,7 @@
 # Quizpp - Flutter Quiz App
 
+<video src="assets/demo-video.mp4" controls width="600"></video>
+
 ## 📌 Overview
 Quizpp is a Flutter-based quiz application that allows users to register, log in, and participate in quizzes. It features Firebase authentication, real-time data storage, and a responsive UI.
 
