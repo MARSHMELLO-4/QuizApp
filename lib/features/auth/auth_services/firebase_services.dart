@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 enum AuthStatus {
@@ -18,16 +19,23 @@ class AuthResult {
   AuthResult({required this.status, required this.message, this.userId});
 }
 
-Future<AuthResult> signUp(String email, String password) async {
+Future<AuthResult> signUp(String email, String password, String name) async {
   try {
-    UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    UserCredential userCredential = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(email: email, password: password);
+
+    // Set the display name
+    await userCredential.user?.updateDisplayName(name);
+    await userCredential.user?.reload(); // Refresh user data
+    final updatedUser = FirebaseAuth.instance.currentUser;
+
+    // Save to Firestore
+    await saveUserToFirestore(name);
+
     return AuthResult(
       status: AuthStatus.success,
-      message: "User Signed up Successfully",
-      userId: userCredential.user?.uid,
+      message: "User signed up successfully",
+      userId: updatedUser?.uid,
     );
   } catch (e) {
     if (e is FirebaseAuthException) {
@@ -60,6 +68,7 @@ Future<AuthResult> signUp(String email, String password) async {
     );
   }
 }
+
 
 Future<AuthResult> signIn(String email, String password) async {
   try {
@@ -101,5 +110,20 @@ Future<AuthResult> signIn(String email, String password) async {
       status: AuthStatus.unknownError,
       message: "An error occurred: $e",
     );
+  }
+}
+
+Future<void> saveUserToFirestore(String name) async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    final userDoc = FirebaseFirestore.instance.collection('score').doc(user.uid);
+
+    await userDoc.set({
+      'uid': user.uid,
+      'name': name,
+      'score' : 0, // Initialize score to 0
+      // Add more fields as needed
+    }, SetOptions(merge: true));
   }
 }

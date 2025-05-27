@@ -15,6 +15,7 @@ class Signup extends StatefulWidget {
 class _SignupState extends State<Signup> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
 
   @override
   void dispose() {
@@ -23,8 +24,8 @@ class _SignupState extends State<Signup> {
     super.dispose();
   }
 
-  Future<AuthResult> callSignUp(String email, String password) async {
-    final response = await signUp(email, password);
+  Future<AuthResult> callSignUp(String email, String password,String name) async {
+    final response = await signUp(email, password,name);
     return response;
   }
 
@@ -68,6 +69,11 @@ class _SignupState extends State<Signup> {
                 child: Column(
                   children: [
                     TextFieldWidget(
+                      text: "Name",
+                      textEditingController: nameController,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFieldWidget(
                       text: "Email",
                       textEditingController: emailController,
                     ),
@@ -94,7 +100,7 @@ class _SignupState extends State<Signup> {
                   onPressed: () async {
                     final email = emailController.text.trim();
                     final password = passwordController.text.trim();
-
+                    final name = nameController.text; // Extracting name from email
                     if (email.isEmpty || password.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -105,7 +111,7 @@ class _SignupState extends State<Signup> {
                       return;
                     }
 
-                    final response = await callSignUp(email, password);
+                    final response = await callSignUp(email, password,name);
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(response.message)),

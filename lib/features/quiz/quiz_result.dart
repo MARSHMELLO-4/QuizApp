@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizpp/features/home_page/view/home.dart';
+import 'package:quizpp/features/leaderboard/leaderboard_service.dart';
+import 'package:quizpp/features/profile/profilepage.dart';
 
 class QuizResult extends StatefulWidget {
   final int result_score;
@@ -29,7 +31,20 @@ class _QuizResultState extends State<QuizResult> {
     super.initState();
     feedbackMessage = _generateFeedback();
     printThings();
+    updateLeaderBoard();
   }
+
+  Future<void> updateLeaderBoard() async {
+    final score = widget.result_score;
+    try{
+      final res = await updateLeaderboard(score);
+    }
+    catch (e) {
+      print("Error updating leaderboard: $e");
+    }
+  }
+
+
 
   String _generateFeedback() {
     double percentage = (widget.result_score / widget.total_score) * 100;
@@ -55,6 +70,20 @@ class _QuizResultState extends State<QuizResult> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Quiz Result"),
+        //adding the home icon in app bar add it to the last of the app bar
+        actions: [
+          IconButton(
+            icon: Icon(Icons.home),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Home(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -80,21 +109,19 @@ class _QuizResultState extends State<QuizResult> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Home(),
-                    ),
-                  );
-                },
-                child: Text(
-                  "Go To Home",
-                  style: TextStyle(fontSize: 15),
-                ),
-              ),
             ],
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Profilepage(),
+                ),
+              );
+            },
+            icon: Icon(Icons.leaderboard, size: 30),
+            label: Text('See Leaderboard', style: TextStyle(fontSize: 16)),
           ),
           Expanded(
             child: ListView.builder(

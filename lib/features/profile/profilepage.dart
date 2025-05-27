@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http; // HTTP package for making API calls
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
-import '../auth/views/login.dart';
-import '../auth/views/signup.dart';
+import 'package:quizpp/features/auth/views/login.dart';
+import 'package:quizpp/features/auth/views/signup.dart';
+import 'package:quizpp/features/leaderboard/leaderboard_service.dart';
 
 class Profilepage extends StatefulWidget {
   const Profilepage({super.key});
@@ -22,6 +22,8 @@ class _ProfilepageState extends State<Profilepage> {
   final TextEditingController _addressController = TextEditingController();
   User? _currentUser;
   String? _profileImageUrl;
+  List<Map<String, dynamic>> _leaderboard = [];
+  Map<String, dynamic>? _currentUserRank;
 
   @override
   void initState() {
@@ -29,6 +31,24 @@ class _ProfilepageState extends State<Profilepage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fetchUserDetails();
     });
+    getLeaderBoard();
+  }
+
+  Future<void> getLeaderBoard() async {
+    final leaderboard = await giveLeaderboardService();
+    if (leaderboard.isNotEmpty) {
+      setState(() {
+        _leaderboard = leaderboard;
+        // Find current user's rank
+        if (_currentUser != null) {
+          _currentUserRank = _leaderboard.firstWhere(
+                  (entry) => entry['uid'] == _currentUser?.uid,
+              orElse: () => {'name': 'You', 'score': 0, 'rank': _leaderboard.length + 1});
+        }
+      });
+    } else {
+      print("Failed to fetch leaderboard.");
+    }
   }
 
   Future<void> fetchUserDetails() async {
@@ -39,6 +59,7 @@ class _ProfilepageState extends State<Profilepage> {
           _currentUser = user;
           _emailController.text = user.email ?? "";
           _displayNameController.text = user.displayName ?? "";
+          _profileImageUrl = user.photoURL;
         });
       }
     } catch (e) {
@@ -48,42 +69,32 @@ class _ProfilepageState extends State<Profilepage> {
     }
   }
 
-  // Pick an image and upload it to Cloudinary using HTTP POST method
   Future<void> pickAndUploadImage() async {
     final picker = ImagePicker();
-    // Pick an image from the gallery
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
       try {
-        // Prepare the image file for upload
         final imageFile = await image.readAsBytes();
-
-        // Set up the Cloudinary URL and the API key for your account
         final url = Uri.parse('https://api.cloudinary.com/v1_1/dcpdaxsrs/image/upload');
-
-        // Prepare the request data (multipart)
         final request = http.MultipartRequest('POST', url)
-          ..fields['upload_preset'] = 'imageStorage' // Upload preset you created in Cloudinary
+          ..fields['upload_preset'] = 'imageStorage'
           ..files.add(await http.MultipartFile.fromBytes('file', imageFile,
               filename: image.name));
 
-        // Send the request
         final response = await request.send();
 
-        // Handle the response
         if (response.statusCode == 200) {
           final responseData = await response.stream.bytesToString();
           final responseJson = json.decode(responseData);
           setState(() {
-            _profileImageUrl = responseJson['secure_url']; // Store the image URL from the response
+            _profileImageUrl = responseJson['secure_url'];
           });
 
-          // After uploading, save the image URL to Firebase Authentication
           if (_currentUser != null) {
             await _currentUser!.updateProfile(photoURL: _profileImageUrl);
             await _currentUser!.reload();
-            _currentUser = FirebaseAuth.instance.currentUser; // Refresh the user info
+            _currentUser = FirebaseAuth.instance.currentUser;
           }
         } else {
           throw Exception('Failed to upload image');
@@ -96,6 +107,57 @@ class _ProfilepageState extends State<Profilepage> {
     }
   }
 
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_profileImageUrl != null)
+            ListTile(
+              leading: const Icon(Icons.visibility),
+              title: const Text('View Profile Picture'),
+              onTap: () {
+                Navigator.pop(context);
+                _showFullImage();
+              },
+            ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Change Profile Picture'),
+            onTap: () {
+              Navigator.pop(context);
+              pickAndUploadImage();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullImage() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: Image.network(_profileImageUrl!),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Future<void> saveDetails() async {
     if (_formKey.currentState!.validate()) {
@@ -119,7 +181,7 @@ class _ProfilepageState extends State<Profilepage> {
   }
 
   Future<void> logOut() async {
-    FirebaseAuth.instance.signOut();
+    await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => Signup()),
@@ -131,6 +193,19 @@ class _ProfilepageState extends State<Profilepage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile Page"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Login(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -154,115 +229,128 @@ class _ProfilepageState extends State<Profilepage> {
             ),
           ],
         )
-            : Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Ddisplay name field
-                TextFormField(
-                  controller: _displayNameController,
-                  decoration: const InputDecoration(
-                    labelText: "Display Name",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Display Name cannot be empty";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                //email
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: "Email",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Email cannot be empty";
-                    }
-                    if (!RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")
-                        .hasMatch(value)) {
-                      return "Enter a valid email address";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                //phne
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: "Phone Number",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Phone Number cannot be empty";
-                    }
-                    if (!RegExp(r"^\d{10}$").hasMatch(value)) {
-                      return "Enter a valid phone number";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                //address
-                TextFormField(
-                  controller: _addressController,
-                  decoration: const InputDecoration(
-                    labelText: "Address",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Address cannot be empty";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                //profile
-                GestureDetector(
-                  onTap: pickAndUploadImage,
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _profileImageUrl != null
-                        ? NetworkImage(_profileImageUrl!)
-                        : AssetImage('assets/default_profile.png')
-                    as ImageProvider,
+            : SingleChildScrollView(
+          child: Column(
+            children: [
+              // Current User's Rank Card
+              Card(
+                elevation: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _showImageOptions,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: _profileImageUrl != null
+                              ? NetworkImage(_profileImageUrl!)
+                              : const AssetImage('assets/default_profile.png')
+                          as ImageProvider,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _currentUser?.displayName ?? 'User',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Column(
+                            children: [
+                              const Text(
+                                "Rank",
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey),
+                              ),
+                              Text(
+                                _currentUserRank != null
+                                    ? '#${_leaderboard.indexWhere((entry) => entry['uid'] == _currentUser?.uid) + 1}'
+                                    : '-',
+                                style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                "Score",
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.grey),
+                              ),
+                              Text(
+                                _currentUserRank?['score']?.toString() ??
+                                    '0',
+                                style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+              ),
 
-                // Save Button
-                ElevatedButton(
-                  onPressed: saveDetails,
-                  child: const Text("Save Changes"),
-                ),
-                const SizedBox(height: 16),
+              // Leaderboard Title
+              const Text(
+                "Leaderboard",
+                style:
+                TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
 
-                //logout
-                ElevatedButton(
-                  onPressed: logOut,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text("Log Out"),
-                ),
-                //here we will add the leader board
-                const SizedBox(height: 16),
-
-              ],
-            ),
+              // Leaderboard List
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _leaderboard.length,
+                itemBuilder: (context, index) {
+                  final entry = _leaderboard[index];
+                  final isCurrentUser = entry['uid'] == _currentUser?.uid;
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: isCurrentUser
+                        ? Colors.blue.withOpacity(0.1)
+                        : null,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        radius: 20,
+                        backgroundImage: entry['photoURL'] != null
+                            ? NetworkImage(entry['photoURL'])
+                            : const AssetImage('assets/default_profile.png')
+                        as ImageProvider,
+                      ),
+                      title: Text(
+                        entry['name'] ?? 'Unknown',
+                        style: TextStyle(
+                          fontWeight: isCurrentUser
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: Text(
+                        entry['score'].toString(),
+                        style: TextStyle(
+                          fontWeight: isCurrentUser
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      subtitle: Text('Rank: ${index + 1}'),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),
