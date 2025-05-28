@@ -31,6 +31,7 @@ Map<String, List<dynamic>> getQuestion_values(Map<String, dynamic> response) {
     "&frac14;": "¼",
     "&frac12;": "½",
     "&frac34;": "¾",
+    "&laquo;": "«",
   };
 
   String decodeHtmlEntities(String text) {
