@@ -43,10 +43,12 @@ dependencies:
   image_picker: ^1.1.2
   cloudinary_public: ^0.23.1
   cloud_firestore: ^5.6.8
-
+  flutter_gemini: ^3.0.0
+#  dash_chat_2: ^0.0.10 # Check pub.dev for the latest version
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -69,6 +71,9 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/default_profile.png
+    - assets/chatbot_icon.png
+    - assets/google-gemini-icon.png
+    - assets/quiz_app_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -95,3 +100,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/quiz_app_icon.png"  # Path to your icon image
+  min_sdk_android: 21  # optional: specify min SDK if needed

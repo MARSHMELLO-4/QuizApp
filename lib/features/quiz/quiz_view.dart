@@ -228,8 +228,7 @@ class _QuizViewState extends State<QuizView> {
   }
 
   void _endQuiz() {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (context) => QuizResult(
           result_score: totalScore,
@@ -239,6 +238,7 @@ class _QuizViewState extends State<QuizView> {
           total_score: widget.numberOfQuestions,
         ),
       ),
+      (Route<dynamic> route) => false,
     );
   }
 }

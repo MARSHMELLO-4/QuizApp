@@ -197,12 +197,7 @@ class _ProfilepageState extends State<Profilepage> {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Login(),
-                ),
-              );
+              logOut();
             },
           ),
         ],
@@ -213,16 +208,20 @@ class _ProfilepageState extends State<Profilepage> {
             ? Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              "Please log in to see the leaderboard.",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Center(
+              child: const Text(
+                "Please log in to see the leaderboard.",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
+
+                Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => Login()),
+                  (route) => false,
                 );
               },
               child: const Text("Go to Login"),

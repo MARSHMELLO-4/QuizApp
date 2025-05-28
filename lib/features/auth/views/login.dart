@@ -127,9 +127,9 @@ class _LoginState extends State<Login> {
                       );
                       //send the user data to the profile page
                       globalAuthResult = res;
-                      Navigator.pushReplacement(
-                        context,
+                      Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => Home()),
+                        (Route<dynamic> route) => false,
                       );
                     }
                   },

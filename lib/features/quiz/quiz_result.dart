@@ -3,6 +3,8 @@ import 'package:quizpp/features/home_page/view/home.dart';
 import 'package:quizpp/features/leaderboard/leaderboard_service.dart';
 import 'package:quizpp/features/profile/profilepage.dart';
 
+import '../chatBot/chatbot_page.dart';
+
 class QuizResult extends StatefulWidget {
   final int result_score;
   final Map<String, String> responses;
@@ -113,7 +115,7 @@ class _QuizResultState extends State<QuizResult> {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => Profilepage(),
@@ -175,12 +177,26 @@ class _QuizResultState extends State<QuizResult> {
                             ),
                           ),
                         SizedBox(height: 4),
-                        Text(
-                          "Correct Answer: $correctAns",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.blue,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              "Correct Answer: $correctAns",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            Spacer(),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => ChatbotPage(question: question,correctOption: correctAns,selectedOption: selectedOption,)),
+                                );
+                              },
+                                child: Image.asset("assets/chatbot_icon.png", height: 24,width: 24,),
+                            ),
+                          ],
                         ),
                       ],
                     ),

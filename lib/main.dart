@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:quizpp/constants.dart';
 import 'package:quizpp/features/auth/views/login.dart';
 import 'package:quizpp/features/auth/views/signup.dart';
+import 'package:quizpp/features/chatBot/chatbot_page.dart';
 import 'package:quizpp/features/home_page/view/home.dart';
 import 'package:quizpp/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +18,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  //insiitalise the gemini in our app
+  Gemini.init(apiKey: GEMINI_API_KEY);
   // Run the app
   runApp(const MyApp());
 }
@@ -45,6 +49,7 @@ class MyAppState extends State<MyApp> {
     setState(() {
       if (isLoggedIn == true) {
         initialScreen = Home();
+        // initialScreen = ChatbotPage();
       } else if (isLoggedIn == false) {
         initialScreen = Login();
       } else {
@@ -91,6 +96,7 @@ class MyAppState extends State<MyApp> {
 
     // Show the decided screen
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
